@@ -1,19 +1,41 @@
 package Analyze;
 import java_cup.runtime.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import Classes.SintacticalError;
+import Classes.AFD;
+import Classes.AP;
+import Classes.GestorAutomatas;
 
 //Configuracion de CUP
 parser code
 {:
     //Código javas
     public ArrayList<SintacticalError> erroresSintacticos = new ArrayList<>();
+    public GestorAutomatas gestorAutomatas = new GestorAutomatas();
 
     public void syntax_error(Symbol sym) {
         erroresSintacticos.add(new SintacticalError(sym.left,sym.right,sym.value,Terminal.terminalNames[sym.sym]));
     }
     public void unrecovered_syntax_error(Symbol sym) throws java.lang.Exception {
         erroresSintacticos.add(new SintacticalError("Error Sintáctico sin recuperar."));
+    }
+    
+    // Método auxiliar para procesar lista de estados/símbolos
+    private Set<String> procesarLista(String lista) {
+        Set<String> resultado = new HashSet<>();
+        if (lista != null && !lista.trim().isEmpty()) {
+            String[] elementos = lista.split(",");
+            for (String elemento : elementos) {
+                String elem = elemento.trim();
+                if (!elem.isEmpty()) {
+                    resultado.add(elem);
+                }
+            }
+        }
+        return resultado;
     }
 
 :}
@@ -25,9 +47,12 @@ TK_SemiColon, TK_OR, TK_KW_Transiciones, TK_Colon, TK_Slash, TK_Arrow, TK_KW_AP,
 TK_Right_Parenthesis, TK_KW_Desc, TK_KW_VerAutomatas;
 
 //definimos simbolos no terminales
-non terminal String INICIO, AFD, AFDI, AFDF, ATRIBUTES_LIST, ATRIBUTES, STATES, STATE, TRANSITION,
-TRANSITIONS, ONETRANSITION, DECLARATIONS, DECLARATION, APD, FUNCTIONS, APDI, APDF, ATRIBUTES_LIST_AP, ATRIBUTES_AP, SIMBOLS, SIMBOL, TRANSITIONAP, TRANSITIONS_LIST_AP, ONETRANSITIONAP, DECLARATIONAP, PRODUCTIONS_AP, PRODUCTION_AP,
+non terminal String INICIO, AFDI, AFDF, ATRIBUTES_LIST, ATRIBUTES, STATES, STATE, TRANSITION,
+TRANSITIONS, ONETRANSITION, DECLARATIONS, DECLARATION, FUNCTIONS, 
+APDI, APDF, ATRIBUTES_LIST_AP, ATRIBUTES_AP, SIMBOLS, SIMBOL, TRANSITIONAP, TRANSITIONS_LIST_AP, ONETRANSITIONAP, DECLARATIONAP, PRODUCTIONS_AP, PRODUCTION_AP,
 FUNCTION, ENCAP, BLOCK, BLOCKS;
+non terminal AFD AFD;
+non terminal AP APD;
 
 //definimos precedencia de operadores
 
@@ -37,71 +62,319 @@ start with INICIO;
 INICIO ::= BLOCKS;
 BLOCKS ::=  BLOCK BLOCKS
           | BLOCK;
-BLOCK  ::=  AFD FUNCTIONS
-          | APD FUNCTIONS
+BLOCK  ::=  AFD:afd FUNCTIONS
+          {: 
+            if (afd != null) {
+                parser.gestorAutomatas.agregarAFD(afd);
+                System.out.println("AFD '" + afd.getNombre() + "' creado exitosamente.");
+            }
+          :}
+          | APD:ap FUNCTIONS
+          {:
+            if (ap != null) {
+                parser.gestorAutomatas.agregarAP(ap);
+                System.out.println("AP '" + ap.getNombre() + "' creado exitosamente.");
+            }
+          :}
           | error;
 //Definición del AFD
-AFD ::= AFDI ATRIBUTES_LIST TRANSITION AFDF;
+AFD ::= AFDI:nombre ATRIBUTES_LIST:attrs TRANSITION:trans AFDF
+      {:
+        AFD afd = new AFD(nombre);
+        
+        // Procesar atributos (simplificado para demostración)
+        if (attrs != null) {
+            String[] atributos = attrs.split("\\|");
+            for (String attr : atributos) {
+                String[] partes = attr.split(":");
+                if (partes.length == 2) {
+                    String tipo = partes[0].trim();
+                    String valor = partes[1].trim();
+                    
+                    if ("N".equals(tipo)) {
+                        // Estados
+                        for (String estado : parser.procesarLista(valor)) {
+                            afd.agregarEstado(estado);
+                        }
+                    } else if ("T".equals(tipo)) {
+                        // Alfabeto
+                        for (String simbolo : parser.procesarLista(valor)) {
+                            afd.agregarSimbolo(simbolo);
+                        }
+                    } else if ("I".equals(tipo)) {
+                        // Estado inicial
+                        Set<String> inicial = parser.procesarLista(valor);
+                        if (!inicial.isEmpty()) {
+                            afd.setEstadoInicial(inicial.iterator().next());
+                        }
+                    } else if ("A".equals(tipo)) {
+                        // Estados de aceptación
+                        for (String estado : parser.procesarLista(valor)) {
+                            afd.agregarEstadoAceptacion(estado);
+                        }
+                    }
+                }
+            }
+        }
+        
+        RESULT = afd;
+      :};
 //Definición de funciones
 FUNCTIONS ::= FUNCTION FUNCTIONS
             | /* vacío */ ;
 FUNCTION ::= TK_KW_VerAutomatas TK_Left_Parenthesis TK_Right_Parenthesis TK_SemiColon
-           | TK_KW_Desc TK_Left_Parenthesis TK_ID TK_Right_Parenthesis TK_SemiColon
+           {:
+             parser.gestorAutomatas.verAutomatas();
+           :}
+           | TK_KW_Desc TK_Left_Parenthesis TK_ID:nombre TK_Right_Parenthesis TK_SemiColon
+           {:
+             parser.gestorAutomatas.describirAutomata(nombre);
+           :}
            | TK_ID TK_Left_Parenthesis TK_String TK_Right_Parenthesis TK_SemiColon ;
 //Encabezado del AFD
-AFDI ::= TK_LessT TK_KW_AFD TK_KW_Nombre TK_Equal TK_String TK_GreatherT ;
+AFDI ::= TK_LessT TK_KW_AFD TK_KW_Nombre TK_Equal TK_String:nombre TK_GreatherT
+       {:
+         // Remover comillas del nombre si las tiene
+         String nombreLimpio = nombre;
+         if (nombreLimpio.startsWith("\"") && nombreLimpio.endsWith("\"")) {
+             nombreLimpio = nombreLimpio.substring(1, nombreLimpio.length() - 1);
+         }
+         RESULT = nombreLimpio;
+       :};
 //Definición de atributos del AFD
-ATRIBUTES_LIST ::= ATRIBUTES ATRIBUTES_LIST
-                 | ATRIBUTES;
+ATRIBUTES_LIST ::= ATRIBUTES:attr ATRIBUTES_LIST:lista
+                 {:
+                   RESULT = attr + "|" + (lista != null ? lista : "");
+                 :}
+                 | ATRIBUTES:attr
+                 {:
+                   RESULT = attr;
+                 :};
 //Definición de cada atributo N, T, I, Ad
-ATRIBUTES ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
-            | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
-            | TK_KW_InitialState TK_Equal TK_Left_Brace STATE TK_Right_Brace TK_SemiColon
-            | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon ;
+ATRIBUTES ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES:estados TK_Right_Brace TK_SemiColon
+            {:
+              RESULT = "N:" + estados;
+            :}
+            | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES:alfabeto TK_Right_Brace TK_SemiColon
+            {:
+              RESULT = "T:" + alfabeto;
+            :}
+            | TK_KW_InitialState TK_Equal TK_Left_Brace STATE:inicial TK_Right_Brace TK_SemiColon
+            {:
+              RESULT = "I:" + inicial;
+            :}
+            | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES:aceptacion TK_Right_Brace TK_SemiColon
+            {:
+              RESULT = "A:" + aceptacion;
+            :};
 //Definición de estados por ejemplo {q0, q1, q2}
-STATES ::= STATE TK_Coma STATES
-         | STATE ;
+STATES ::= STATE:estado TK_Coma STATES:lista
+         {:
+           RESULT = estado + "," + lista;
+         :}
+         | STATE:estado
+         {:
+           RESULT = estado;
+         :};
 //Definición de un estado por ejemplo q0 o 0
-STATE ::= TK_ID | TK_Number ;
+STATE ::= TK_ID:id
+        {:
+          RESULT = id;
+        :}
+        | TK_Number:num
+        {:
+          RESULT = num;
+        :};
 //Definición de transiciones Transiciones: {...}
-TRANSITION ::= TK_KW_Transiciones TK_Colon TRANSITIONS ;
-TRANSITIONS ::= ONETRANSITION TRANSITIONS
-              | ONETRANSITION ;
-ONETRANSITION ::= TK_ID TK_Arrow DECLARATIONS TK_SemiColon;
-DECLARATIONS ::= DECLARATION TK_OR DECLARATIONS
-                | DECLARATION ;
-DECLARATION ::= TK_Number TK_Coma TK_ID
-                | TK_ID TK_Coma TK_Number ;
+TRANSITION ::= TK_KW_Transiciones TK_Colon TRANSITIONS:trans
+             {:
+               RESULT = trans;
+             :};
+TRANSITIONS ::= ONETRANSITION:trans TRANSITIONS:lista
+              {:
+                RESULT = trans + "|" + (lista != null ? lista : "");
+              :}
+              | ONETRANSITION:trans
+              {:
+                RESULT = trans;
+              :};
+ONETRANSITION ::= TK_ID:estado TK_Arrow DECLARATIONS:decl TK_SemiColon
+                {:
+                  RESULT = estado + ":" + decl;
+                :};
+DECLARATIONS ::= DECLARATION:decl TK_OR DECLARATIONS:lista
+               {:
+                 RESULT = decl + "|" + lista;
+               :}
+               | DECLARATION:decl
+               {:
+                 RESULT = decl;
+               :};
+DECLARATION ::= TK_Number:simbolo TK_Coma TK_ID:estado
+              {:
+                RESULT = simbolo + ":" + estado;
+              :}
+              | TK_ID:simbolo TK_Coma TK_Number:estado
+              {:
+                RESULT = simbolo + ":" + estado;
+              :};
 //Definición del cierre del AFD
-AFDF ::= TK_LessT TK_Slash TK_KW_AFD TK_GreatherT ;
+AFDF ::= TK_LessT TK_Slash TK_KW_AFD TK_GreatherT
+       {:
+         RESULT = "";
+       :};
 // Estructura principal del AP: Encabezado, Atributos, Transiciones, Cierre
-APD ::= APDI ATRIBUTES_LIST_AP TRANSITIONAP APDF;
+APD ::= APDI:nombre ATRIBUTES_LIST_AP:attrs TRANSITIONAP:trans APDF
+      {:
+        AP ap = new AP(nombre);
+        
+        // Procesar atributos del AP (simplificado)
+        if (attrs != null) {
+            String[] atributos = attrs.split("\\|");
+            for (String attr : atributos) {
+                String[] partes = attr.split(":");
+                if (partes.length == 2) {
+                    String tipo = partes[0].trim();
+                    String valor = partes[1].trim();
+                    
+                    if ("N".equals(tipo)) {
+                        // Estados
+                        for (String estado : parser.procesarLista(valor)) {
+                            ap.agregarEstado(estado);
+                        }
+                    } else if ("T".equals(tipo)) {
+                        // Alfabeto
+                        for (String simbolo : parser.procesarLista(valor)) {
+                            ap.agregarSimbolo(simbolo);
+                        }
+                    } else if ("P".equals(tipo)) {
+                        // Símbolos de pila
+                        for (String simbolo : parser.procesarLista(valor)) {
+                            ap.agregarSimboloPila(simbolo);
+                        }
+                    } else if ("I".equals(tipo)) {
+                        // Estado inicial
+                        Set<String> inicial = parser.procesarLista(valor);
+                        if (!inicial.isEmpty()) {
+                            ap.setEstadoInicial(inicial.iterator().next());
+                        }
+                    } else if ("A".equals(tipo)) {
+                        // Estados de aceptación
+                        for (String estado : parser.procesarLista(valor)) {
+                            ap.agregarEstadoAceptacion(estado);
+                        }
+                    }
+                }
+            }
+        }
+        
+        RESULT = ap;
+      :};
 
 // Encabezado del AP: <AP Nombre="AP_1">
-APDI ::= TK_LessT TK_KW_AP TK_KW_Nombre TK_Equal TK_String TK_GreatherT ;
+APDI ::= TK_LessT TK_KW_AP TK_KW_Nombre TK_Equal TK_String:nombre TK_GreatherT
+       {:
+         // Remover comillas del nombre si las tiene
+         String nombreLimpio = nombre;
+         if (nombreLimpio.startsWith("\"") && nombreLimpio.endsWith("\"")) {
+             nombreLimpio = nombreLimpio.substring(1, nombreLimpio.length() - 1);
+         }
+         RESULT = nombreLimpio;
+       :};
 
-ATRIBUTES_LIST_AP ::= ATRIBUTES_AP ATRIBUTES_LIST_AP
-                    |  /* vacío */ ;
+ATRIBUTES_LIST_AP ::= ATRIBUTES_AP:attr ATRIBUTES_LIST_AP:lista
+                    {:
+                      RESULT = attr + "|" + (lista != null ? lista : "");
+                    :}
+                    |  /* vacío */
+                    {:
+                      RESULT = "";
+                    :};
 // Definición de cada atributo: N, T, P, I, A
-ATRIBUTES_AP ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
-               | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
-               | TK_KW_Simbols TK_Equal TK_Left_Brace SIMBOLS TK_Right_Brace TK_SemiColon
-               | TK_KW_InitialState TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
-               | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon;
-SIMBOLS ::= SIMBOL TK_Coma SIMBOLS
-          | SIMBOL ;
+ATRIBUTES_AP ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES:estados TK_Right_Brace TK_SemiColon
+               {:
+                 RESULT = "N:" + estados;
+               :}
+               | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES:alfabeto TK_Right_Brace TK_SemiColon
+               {:
+                 RESULT = "T:" + alfabeto;
+               :}
+               | TK_KW_Simbols TK_Equal TK_Left_Brace SIMBOLS:simbolos TK_Right_Brace TK_SemiColon
+               {:
+                 RESULT = "P:" + simbolos;
+               :}
+               | TK_KW_InitialState TK_Equal TK_Left_Brace STATES:inicial TK_Right_Brace TK_SemiColon
+               {:
+                 RESULT = "I:" + inicial;
+               :}
+               | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES:aceptacion TK_Right_Brace TK_SemiColon
+               {:
+                 RESULT = "A:" + aceptacion;
+               :};
+SIMBOLS ::= SIMBOL:simbol TK_Coma SIMBOLS:lista
+          {:
+            RESULT = simbol + "," + lista;
+          :}
+          | SIMBOL:simbol
+          {:
+            RESULT = simbol;
+          :};
 
-SIMBOL ::= TK_ID | TK_Dollar | TK_Hash ;
-TRANSITIONAP ::= TK_KW_Transiciones TK_Colon TRANSITIONS_LIST_AP
-                | /* vacío */ ;
-TRANSITIONS_LIST_AP ::= ONETRANSITIONAP TRANSITIONS_LIST_AP
-                      | ONETRANSITIONAP ;
-ONETRANSITIONAP ::= TK_ID ENCAP TK_Arrow ENCAP TK_Coma PRODUCTIONS_AP TK_SemiColon ;
-ENCAP ::= TK_Left_Parenthesis SIMBOL TK_Right_Parenthesis;
-PRODUCTIONS_AP ::= PRODUCTION_AP TK_OR PRODUCTIONS_AP
-                   | PRODUCTION_AP;
-PRODUCTION_AP ::= TK_ID TK_Colon ENCAP
-                | ENCAP TK_Arrow ENCAP TK_Coma TK_ID TK_Colon ENCAP;
+SIMBOL ::= TK_ID:id
+         {:
+           RESULT = id;
+         :}
+         | TK_Dollar
+         {:
+           RESULT = "$";
+         :}
+         | TK_Hash
+         {:
+           RESULT = "#";
+         :};
+TRANSITIONAP ::= TK_KW_Transiciones TK_Colon TRANSITIONS_LIST_AP:trans
+                {:
+                  RESULT = trans;
+                :}
+                | /* vacío */
+                {:
+                  RESULT = "";
+                :};
+TRANSITIONS_LIST_AP ::= ONETRANSITIONAP:trans TRANSITIONS_LIST_AP:lista
+                      {:
+                        RESULT = trans + "|" + (lista != null ? lista : "");
+                      :}
+                      | ONETRANSITIONAP:trans
+                      {:
+                        RESULT = trans;
+                      :};
+ONETRANSITIONAP ::= TK_ID:estado ENCAP:entrada TK_Arrow ENCAP:pila TK_Coma PRODUCTIONS_AP:prod TK_SemiColon
+                  {:
+                    RESULT = estado + ":" + entrada + ":" + pila + ":" + prod;
+                  :};
+ENCAP ::= TK_Left_Parenthesis SIMBOL:simbol TK_Right_Parenthesis
+        {:
+          RESULT = simbol;
+        :};
+PRODUCTIONS_AP ::= PRODUCTION_AP:prod TK_OR PRODUCTIONS_AP:lista
+                 {:
+                   RESULT = prod + "|" + lista;
+                 :}
+                 | PRODUCTION_AP:prod
+                 {:
+                   RESULT = prod;
+                 :};
+PRODUCTION_AP ::= TK_ID:estado TK_Colon ENCAP:accion
+                {:
+                  RESULT = estado + ":" + accion;
+                :}
+                | ENCAP:entrada TK_Arrow ENCAP:pila TK_Coma TK_ID:estado TK_Colon ENCAP:accion
+                {:
+                  RESULT = entrada + ":" + pila + ":" + estado + ":" + accion;
+                :};
 //</AP>
-APDF ::= TK_LessT TK_Slash TK_KW_AP TK_GreatherT ;
+APDF ::= TK_LessT TK_Slash TK_KW_AP TK_GreatherT
+       {:
+         RESULT = "";
+       :};
 

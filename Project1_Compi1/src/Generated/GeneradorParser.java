@@ -6,12 +6,12 @@ public class GeneradorParser {
             java_cup.Main.main(
                     new String[] {
                             "-destdir",
-                            "Project1_Compi1/src/Analyze",
+                            "src/Analyze",
                             "-symbols",
                             "Terminal",
                             "-parser",
                             "Parser",
-                            "Project1_Compi1/src/Analyze/Parser.cup"
+                            "src/Analyze/Parser.cup"
                     }
             );
         }catch(Exception e){

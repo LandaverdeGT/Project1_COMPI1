@@ -27,3 +27,16 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Project Specific ###
+# Compiled class files
+*.class
+
+# Output directories
+outputs/
+
+# Generated parser backup files
+Scanner.java~
+
+# Dependencies should not be committed but we'll keep them for demo
+# lib/*.jar
