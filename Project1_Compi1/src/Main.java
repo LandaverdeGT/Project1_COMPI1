@@ -1,15 +1,30 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
-
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+        System.out.println("=== PROYECTO DE AUTÓMATAS CON CUP ===");
+        System.out.println("Proyecto que demuestra cómo crear autómatas desde archivo CUP\n");
+        
+        System.out.println("Para ejecutar la demostración:");
+        System.out.println("  java -cp \"lib/*:.\" Test.DemoAutomatas\n");
+        
+        System.out.println("Para ejecutar las pruebas:");
+        System.out.println("  java -cp \"lib/*:.\" Test.PruebaP\n");
+        
+        System.out.println("Archivos importantes:");
+        System.out.println("  - Parser.cup: Gramática CUP con acciones semánticas");
+        System.out.println("  - AFD.java: Clase para Autómatas Finitos");
+        System.out.println("  - AP.java: Clase para Autómatas de Pila");
+        System.out.println("  - GestorAutomatas.java: Administrador de autómatas");
+        System.out.println("  - README_AUTOMATAS.md: Documentación completa");
+        
+        // Ejecutar la demo automáticamente
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("EJECUTANDO DEMO AUTOMÁTICAMENTE...");
+        System.out.println("=".repeat(50));
+        
+        try {
+            Test.DemoAutomatas.main(new String[]{});
+        } catch (Exception e) {
+            System.err.println("Error ejecutando demo: " + e.getMessage());
         }
     }
 }
