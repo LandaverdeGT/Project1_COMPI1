@@ -1,0 +1,107 @@
+package Analyze;
+import java_cup.runtime.*;
+import java.util.ArrayList;
+import Classes.SintacticalError;
+
+//Configuracion de CUP
+parser code
+{:
+    //Código javas
+    public ArrayList<SintacticalError> erroresSintacticos = new ArrayList<>();
+
+    public void syntax_error(Symbol sym) {
+        erroresSintacticos.add(new SintacticalError(sym.left,sym.right,sym.value,Terminal.terminalNames[sym.sym]));
+    }
+    public void unrecovered_syntax_error(Symbol sym) throws java.lang.Exception {
+        erroresSintacticos.add(new SintacticalError("Error Sintáctico sin recuperar."));
+    }
+
+:}
+
+//definimos simbolos terminales
+terminal String TK_Plus, TK_Number, TK_Point, TK_LessT, TK_GreatherT, TK_Equal, TK_KW_AFD, TK_KW_Nombre, TK_String,
+TK_KW_NumberStates, TK_KW_Alphabet, TK_KW_InitialState, TK_KW_AcceptStates, TK_ID, TK_Left_Brace, TK_Right_Brace, TK_Coma,
+TK_SemiColon, TK_OR, TK_KW_Transiciones, TK_Colon, TK_Slash, TK_Arrow, TK_KW_AP, TK_Hash, TK_Dollar, TK_KW_Simbols, TK_Left_Parenthesis,
+TK_Right_Parenthesis, TK_KW_Desc, TK_KW_VerAutomatas;
+
+//definimos simbolos no terminales
+non terminal String INICIO, AFD, AFDI, AFDF, ATRIBUTES_LIST, ATRIBUTES, STATES, STATE, TRANSITION,
+TRANSITIONS, ONETRANSITION, DECLARATIONS, DECLARATION, APD, FUNCTIONS, APDI, APDF, ATRIBUTES_LIST_AP, ATRIBUTES_AP, SIMBOLS, SIMBOL, TRANSITIONAP, TRANSITIONS_LIST_AP, ONETRANSITIONAP, DECLARATIONAP, PRODUCTIONS_AP, PRODUCTION_AP,
+FUNCTION, ENCAP, BLOCK, BLOCKS;
+
+//definimos precedencia de operadores
+
+//definimos la gramatica para el análisis sintáctico
+start with INICIO;
+
+INICIO ::= BLOCKS;
+BLOCKS ::=  BLOCK BLOCKS
+          | BLOCK;
+BLOCK  ::=  AFD FUNCTIONS
+          | APD FUNCTIONS
+          | error;
+//Definición del AFD
+AFD ::= AFDI ATRIBUTES_LIST TRANSITION AFDF;
+//Definición de funciones
+FUNCTIONS ::= FUNCTION FUNCTIONS
+            | /* vacío */ ;
+FUNCTION ::= TK_KW_VerAutomatas TK_Left_Parenthesis TK_Right_Parenthesis TK_SemiColon
+           | TK_KW_Desc TK_Left_Parenthesis TK_ID TK_Right_Parenthesis TK_SemiColon
+           | TK_ID TK_Left_Parenthesis TK_String TK_Right_Parenthesis TK_SemiColon ;
+//Encabezado del AFD
+AFDI ::= TK_LessT TK_KW_AFD TK_KW_Nombre TK_Equal TK_String TK_GreatherT ;
+//Definición de atributos del AFD
+ATRIBUTES_LIST ::= ATRIBUTES ATRIBUTES_LIST
+                 | ATRIBUTES;
+//Definición de cada atributo N, T, I, Ad
+ATRIBUTES ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
+            | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
+            | TK_KW_InitialState TK_Equal TK_Left_Brace STATE TK_Right_Brace TK_SemiColon
+            | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon ;
+//Definición de estados por ejemplo {q0, q1, q2}
+STATES ::= STATE TK_Coma STATES
+         | STATE ;
+//Definición de un estado por ejemplo q0 o 0
+STATE ::= TK_ID | TK_Number ;
+//Definición de transiciones Transiciones: {...}
+TRANSITION ::= TK_KW_Transiciones TK_Colon TRANSITIONS ;
+TRANSITIONS ::= ONETRANSITION TRANSITIONS
+              | ONETRANSITION ;
+ONETRANSITION ::= TK_ID TK_Arrow DECLARATIONS TK_SemiColon;
+DECLARATIONS ::= DECLARATION TK_OR DECLARATIONS
+                | DECLARATION ;
+DECLARATION ::= TK_Number TK_Coma TK_ID
+                | TK_ID TK_Coma TK_Number ;
+//Definición del cierre del AFD
+AFDF ::= TK_LessT TK_Slash TK_KW_AFD TK_GreatherT ;
+// Estructura principal del AP: Encabezado, Atributos, Transiciones, Cierre
+APD ::= APDI ATRIBUTES_LIST_AP TRANSITIONAP APDF;
+
+// Encabezado del AP: <AP Nombre="AP_1">
+APDI ::= TK_LessT TK_KW_AP TK_KW_Nombre TK_Equal TK_String TK_GreatherT ;
+
+ATRIBUTES_LIST_AP ::= ATRIBUTES_AP ATRIBUTES_LIST_AP
+                    |  /* vacío */ ;
+// Definición de cada atributo: N, T, P, I, A
+ATRIBUTES_AP ::= TK_KW_NumberStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
+               | TK_KW_Alphabet TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
+               | TK_KW_Simbols TK_Equal TK_Left_Brace SIMBOLS TK_Right_Brace TK_SemiColon
+               | TK_KW_InitialState TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon
+               | TK_KW_AcceptStates TK_Equal TK_Left_Brace STATES TK_Right_Brace TK_SemiColon;
+SIMBOLS ::= SIMBOL TK_Coma SIMBOLS
+          | SIMBOL ;
+
+SIMBOL ::= TK_ID | TK_Dollar | TK_Hash ;
+TRANSITIONAP ::= TK_KW_Transiciones TK_Colon TRANSITIONS_LIST_AP
+                | /* vacío */ ;
+TRANSITIONS_LIST_AP ::= ONETRANSITIONAP TRANSITIONS_LIST_AP
+                      | ONETRANSITIONAP ;
+ONETRANSITIONAP ::= TK_ID ENCAP TK_Arrow ENCAP TK_Coma PRODUCTIONS_AP TK_SemiColon ;
+ENCAP ::= TK_Left_Parenthesis SIMBOL TK_Right_Parenthesis;
+PRODUCTIONS_AP ::= PRODUCTION_AP TK_OR PRODUCTIONS_AP
+                   | PRODUCTION_AP;
+PRODUCTION_AP ::= TK_ID TK_Colon ENCAP
+                | ENCAP TK_Arrow ENCAP TK_Coma TK_ID TK_Colon ENCAP;
+//</AP>
+APDF ::= TK_LessT TK_Slash TK_KW_AP TK_GreatherT ;
+

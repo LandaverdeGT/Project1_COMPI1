@@ -1,0 +1,34 @@
+<AP Nombre="AP_1">
+N = {O, Z, B, C, F};
+T = {a, b};
+I = {X};
+A = {F};
+Transiciones
+B (a) -> ($), B : (#) | (Z) -> (a), C : (b);
+Y (x) -> (Z), C : (b);
+</AP>
+verAutomatas();
+<AFD Nombre="AFD_1">
+N = {S, H, B, C};
+// Estados
+T = {0, 1};
+// Alfabeto
+I = {S};
+// Estado Inicial
+A = {B, C};
+// Estados de Aceptación
+Transiciones:
+S -> 1, H | 0, B ;
+H -> 1, H | 0, B ;
+B -> 0, C | 1, H ;
+C -> 1, H;
+</AFD>
+/*
+El autómata se llama AFD_1.
+Tiene cuatro estados (S, A, B, C).
+El alfabeto incluye los símbolos 0 y 1.
+El estado inicial es S.
+Los estados de aceptación son B y C.
+Se definen las transiciones para cada estado y símbolo.
+*/
+desc(Hola);
