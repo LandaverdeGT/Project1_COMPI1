@@ -1,0 +1,55 @@
+# GUI Layout Preview (Text Representation)
+
+Since this is a headless environment, here's a text representation of the GUI layout:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ [File] Project1 COMPI1 - Compiler Interface                          [_][□][X] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Archivo  Reportes  Ejecutar                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                           LDM            DP                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ Entrada ──────────┐ ┌─ Reporte ──────────┐ ┌─ Salida ───────────┐      │
+│ │                    │ │                    │ │                    │      │
+│ │  [Text input area] │ │  [Report display]  │ │  [Output display]  │      │
+│ │                    │ │                    │ │                    │      │
+│ │  - Editable        │ │  - Read-only       │ │  - Read-only       │      │
+│ │  - Scrollable      │ │  - Scrollable      │ │  - Scrollable      │      │
+│ │  - Monospace font  │ │  - Monospace font  │ │  - Monospace font  │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ │                    │ │                    │ │                    │      │
+│ └────────────────────┘ └────────────────────┘ └────────────────────┘      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Menu Structure:
+├─ Archivo
+│  ├─ Nuevo
+│  ├─ Abrir  
+│  └─ Guardar Archivo
+├─ Reportes
+│  ├─ Reporte de Tokens
+│  └─ Reporte de Errores
+└─ Ejecutar
+   ├─ Analizar
+   └─ Compilar
+
+Theme: Dark (60,60,60 background with 80,80,80 panels and white text)
+```
+
+## Key Design Elements Implemented:
+
+1. **Menu Bar**: Top-level menus as required
+2. **Top Labels**: LDM and DP positioned at center-top
+3. **Three-Panel Layout**: Equal-width columns for Entrada, Reporte, Salida
+4. **Dark Theme**: Professional dark color scheme
+5. **Responsive Layout**: Grid-based layout that adapts to window resizing
+6. **Scrollable Areas**: Text areas with scroll bars when content exceeds visible area
+
+The GUI is now fully IntelliJ IDEA compatible and uses pure Java Swing components without any NetBeans dependencies.
