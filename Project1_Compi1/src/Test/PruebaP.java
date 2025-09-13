@@ -13,7 +13,7 @@ import Classes.SintacticalError;
 public class PruebaP {
     public static void main(String[] args) {
         try {
-            String input = readInput("Project1_Compi1/src/Inputs/input.txt");
+            String input = readInput("src/Inputs/input.txt");
             Scanner scanner = new Scanner(
                     new BufferedReader(new StringReader(input))
             );
